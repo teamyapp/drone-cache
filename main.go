@@ -17,17 +17,17 @@ func main() {
 	cfg := cache.Config{}
 	err := fromEnv(&cfg)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	ca, err := cache.New(cfg)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	err = ca.Execute()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 }
 

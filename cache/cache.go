@@ -54,7 +54,7 @@ func (c Cache) refresh() error {
 	log.Println("Start refreshing cache")
 	err := useCacheDir(func() error {
 		err := c.archiveAndUpload(c.cfg.CacheableRelativePaths, func(path string) string {
-			return path
+			return filepath.Join("relative", path)
 		})
 		if err != nil {
 			log.Println(err)
@@ -62,7 +62,7 @@ func (c Cache) refresh() error {
 		}
 
 		return c.archiveAndUpload(c.cfg.CacheableAbsolutePaths, func(path string) string {
-			return path[1:]
+			return filepath.Join("absolute", path[1:])
 		})
 	})
 	if err != nil {
@@ -78,7 +78,7 @@ func (c Cache) restore() error {
 	log.Println("Start restoring cache")
 	err := useCacheDir(func() error {
 		err := c.downloadAndUnArchive(c.cfg.CacheableRelativePaths, func(path string) string {
-			return path
+			return filepath.Join("relative", path)
 		})
 		if err != nil {
 			log.Println(err)
@@ -86,7 +86,7 @@ func (c Cache) restore() error {
 		}
 
 		return c.downloadAndUnArchive(c.cfg.CacheableAbsolutePaths, func(path string) string {
-			return path[1:]
+			return filepath.Join("absolute", path[1:])
 		})
 	})
 	if err != nil {

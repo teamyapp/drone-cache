@@ -4,20 +4,19 @@ name: feature
 
 steps:
   - name: restore cache
-    image: ghcr.io/teamyapp/drone-cache
+    image: ghcr.io/teamyapp/drone-cache:0.0.3
     volumes:
       - name: cache
         path: /go/pkg/mod
     settings:
-      debug: true
-      s3_endpoint: https://sfo3.digitaloceanspaces.com
+      s3_endpoint: sfo3.digitaloceanspaces.com
       s3_access_key_id:
         from_secret: SPACE_ACCESS_KEY
       s3_secret:
         from_secret: SPACE_SECRET
       s3_bucket: teamyapp
       remote_root_dir: cache/go
-      build: true
+      restore: true
       cacheable_absolute_paths:
         - /go/pkg/mod
   - name: run unit tests
@@ -28,13 +27,12 @@ steps:
     commands:
       - go test ./...
   - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache
+    image: ghcr.io/teamyapp/drone-cache:0.0.3
     volumes:
       - name: cache
         path: /go/pkg/mod
     settings:
-      debug: true
-      s3_endpoint: https://sfo3.digitaloceanspaces.com
+      s3_endpoint: sfo3.digitaloceanspaces.com
       s3_access_key_id:
         from_secret: SPACE_ACCESS_KEY
       s3_secret:
