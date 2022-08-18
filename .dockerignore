@@ -1,0 +1,7 @@
+.idea
+README.md
+.drone.yml
+.env
+.env.dist
+.gitignore
+.cache
