@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-const originalFilePerm = 750
+const originalFilePerm = 777
 
 func archive(srcPath string, destPath string) error {
 	f, err := os.Create(destPath)
