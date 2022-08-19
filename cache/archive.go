@@ -89,7 +89,7 @@ func unArchive(srcPath string, destPath string) error {
 		fullPath := filepath.Join(destPath, archivedFile.Name)
 		info := archivedFile.FileInfo()
 		if info.IsDir() {
-			err = os.MkdirAll(fullPath, info.Mode())
+			err = os.MkdirAll(fullPath, os.ModePerm)
 			if err != nil {
 				log.Println(err)
 				return err
