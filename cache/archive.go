@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 )
 
-const originalFilePerm = 777
-
 func archive(srcPath string, destPath string) error {
 	f, err := os.Create(destPath)
 	if err != nil {
@@ -35,6 +33,16 @@ func archive(srcPath string, destPath string) error {
 			return err
 		}
 
+		if isSymLink(info.Mode()) {
+			link, err := os.Readlink(path)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			header.Extra = []byte(link)
+		}
+
 		header.Method = zip.Deflate
 		header.Name, err = filepath.Rel(srcPath, path)
 		if err != nil {
@@ -52,7 +60,7 @@ func archive(srcPath string, destPath string) error {
 			return err
 		}
 
-		if info.IsDir() {
+		if !info.Mode().IsRegular() {
 			return nil
 		}
 
@@ -81,7 +89,7 @@ func unArchive(srcPath string, destPath string) error {
 		fullPath := filepath.Join(destPath, archivedFile.Name)
 		info := archivedFile.FileInfo()
 		if info.IsDir() {
-			err = os.MkdirAll(fullPath, os.ModePerm)
+			err = os.MkdirAll(fullPath, info.Mode())
 			if err != nil {
 				log.Println(err)
 				return err
@@ -91,7 +99,18 @@ func unArchive(srcPath string, destPath string) error {
 		}
 
 		err = os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
-		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, originalFilePerm)
+		if isSymLink(info.Mode()) {
+			link := string(archivedFile.Extra)
+			err = os.Link(link, fullPath)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			continue
+		}
+
+		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
 		if err != nil {
 			log.Println(err)
 			return err
@@ -114,4 +133,8 @@ func unArchive(srcPath string, destPath string) error {
 	}
 
 	return nil
+}
+
+func isSymLink(mode fs.FileMode) bool {
+	return mode&os.ModeSymlink != 0
 }
