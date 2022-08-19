@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 )
 
+const originalFilePerm = 750
+
 func archive(srcPath string, destPath string) error {
 	f, err := os.Create(destPath)
 	if err != nil {
@@ -89,7 +91,7 @@ func unArchive(srcPath string, destPath string) error {
 		}
 
 		err = os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
-		originalFile, err := os.Create(fullPath)
+		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, originalFilePerm)
 		if err != nil {
 			log.Println(err)
 			return err
