@@ -5,7 +5,7 @@ The most flexible cache plugin for Drone CI
 ```yaml
 steps:
   - name: restore cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod
@@ -28,7 +28,7 @@ steps:
     commands:
       - go test ./...
   - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod
@@ -65,7 +65,7 @@ volumes:
 
 ## Publish new image
 ```
-./scripts/publish.sh
+./scripts/publish.sh [version]
 ```
 
 ## License
