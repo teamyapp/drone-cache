@@ -2,10 +2,54 @@
 The most flexible cache plugin for Drone CI
 
 ## Getting Started
+
+### Node.js project
+
+```yaml
+- name: restore cache
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
+    settings:
+      s3_endpoint: sfo3.digitaloceanspaces.com
+      s3_access_key_id:
+        from_secret: SPACE_ACCESS_KEY
+      s3_secret:
+        from_secret: SPACE_SECRET
+      s3_bucket: teamyapp
+      remote_root_dir: cache/node/teamy-web
+      restore: true
+      cacheable_relative_paths:
+        - node_modules
+  - name: build frontend
+    image: node:16.13.0-alpine3.13
+    commands:
+      - apk add --no-cache git g++ make python3
+      - yarn install --frozen-lockfile
+      - yarn build:staging
+  - name: run unit tests
+    image: node:16.13.0-alpine3.13
+    commands:
+      - apk add --no-cache git
+      - CI=true yarn test
+  - name: refresh cache
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
+    settings:
+      s3_endpoint: sfo3.digitaloceanspaces.com
+      s3_access_key_id:
+        from_secret: SPACE_ACCESS_KEY
+      s3_secret:
+        from_secret: SPACE_SECRET
+      s3_bucket: teamyapp
+      remote_root_dir: cache/node/teamy-web
+      refresh: true
+      cacheable_relative_paths:
+        - node_modules
+```
+
+### Go project
 ```yaml
 steps:
   - name: restore cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod
@@ -28,7 +72,7 @@ steps:
     commands:
       - go test ./...
   - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod
@@ -63,5 +107,10 @@ volumes:
 | cacheable_relative_paths | string    | cached paths, path relative to repo root          |
 | cacheable_absolute_paths | string    | cached paths, absolute paths, volume not needed   |
 
-# License
+## Publish new image
+```
+./scripts/publish.sh [version]
+```
+
+## License
 MIT

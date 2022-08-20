@@ -4,7 +4,7 @@ name: feature
 
 steps:
   - name: restore cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod
@@ -27,7 +27,7 @@ steps:
     commands:
       - go test ./...
   - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.3
+    image: ghcr.io/teamyapp/drone-cache:0.0.9
     volumes:
       - name: cache
         path: /go/pkg/mod

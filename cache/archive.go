@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,7 +51,23 @@ func archive(srcPath string, destPath string) error {
 			return err
 		}
 
-		if info.IsDir() {
+		if info.Mode().IsDir() {
+			return nil
+		}
+
+		if isSymLink(info.Mode()) {
+			link, err := os.Readlink(path)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			_, err = fileWriter.Write([]byte(link))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
 			return nil
 		}
 
@@ -75,6 +92,8 @@ func unArchive(srcPath string, destPath string) error {
 	}
 
 	defer reader.Close()
+
+	symLinkFiles := make([]*zip.File, 0)
 	for _, archivedFile := range reader.File {
 		fullPath := filepath.Join(destPath, archivedFile.Name)
 		info := archivedFile.FileInfo()
@@ -89,13 +108,18 @@ func unArchive(srcPath string, destPath string) error {
 		}
 
 		err = os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
-		originalFile, err := os.Create(fullPath)
+		if isSymLink(info.Mode()) {
+			symLinkFiles = append(symLinkFiles, archivedFile)
+			continue
+		}
+
+		archivedFileReader, err := archivedFile.Open()
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		archivedFileReader, err := archivedFile.Open()
+		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
 		if err != nil {
 			log.Println(err)
 			return err
@@ -111,5 +135,36 @@ func unArchive(srcPath string, destPath string) error {
 		archivedFileReader.Close()
 	}
 
+	return createSymLinks(destPath, symLinkFiles)
+}
+
+func createSymLinks(destPath string, symLinkFiles []*zip.File) error {
+	for _, symLinkFile := range symLinkFiles {
+		archivedFileReader, err := symLinkFile.Open()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		data, err := ioutil.ReadAll(archivedFileReader)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		link := string(data)
+		fullPath := filepath.Join(destPath, symLinkFile.Name)
+		err = os.Symlink(link, fullPath)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		archivedFileReader.Close()
+	}
+
 	return nil
+}
+
+func isSymLink(mode fs.FileMode) bool {
+	return mode&os.ModeSymlink != 0
 }
