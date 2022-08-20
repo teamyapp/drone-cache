@@ -3,7 +3,7 @@ The most flexible cache plugin for Drone CI
 
 ## Getting Started
 
-### Frontend project
+### Node.js project
 
 ```yaml
 - name: restore cache
