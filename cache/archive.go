@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,16 +34,6 @@ func archive(srcPath string, destPath string) error {
 			return err
 		}
 
-		if isSymLink(info.Mode()) {
-			link, err := os.Readlink(path)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-
-			header.Extra = []byte(link)
-		}
-
 		header.Method = zip.Deflate
 		header.Name, err = filepath.Rel(srcPath, path)
 		if err != nil {
@@ -60,7 +51,23 @@ func archive(srcPath string, destPath string) error {
 			return err
 		}
 
-		if !info.Mode().IsRegular() {
+		if info.Mode().IsDir() {
+			return nil
+		}
+
+		if isSymLink(info.Mode()) {
+			link, err := os.Readlink(path)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			_, err = fileWriter.Write([]byte(link))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
 			return nil
 		}
 
@@ -85,6 +92,8 @@ func unArchive(srcPath string, destPath string) error {
 	}
 
 	defer reader.Close()
+
+	symLinkFiles := make([]*zip.File, 0)
 	for _, archivedFile := range reader.File {
 		fullPath := filepath.Join(destPath, archivedFile.Name)
 		info := archivedFile.FileInfo()
@@ -100,23 +109,17 @@ func unArchive(srcPath string, destPath string) error {
 
 		err = os.MkdirAll(filepath.Dir(fullPath), os.ModePerm)
 		if isSymLink(info.Mode()) {
-			link := string(archivedFile.Extra)
-			err = os.Link(link, fullPath)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-
+			symLinkFiles = append(symLinkFiles, archivedFile)
 			continue
 		}
 
-		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
+		archivedFileReader, err := archivedFile.Open()
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		archivedFileReader, err := archivedFile.Open()
+		originalFile, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, info.Mode())
 		if err != nil {
 			log.Println(err)
 			return err
@@ -129,6 +132,33 @@ func unArchive(srcPath string, destPath string) error {
 		}
 
 		originalFile.Close()
+		archivedFileReader.Close()
+	}
+
+	return createSymLinks(destPath, symLinkFiles)
+}
+
+func createSymLinks(destPath string, symLinkFiles []*zip.File) error {
+	for _, symLinkFile := range symLinkFiles {
+		archivedFileReader, err := symLinkFile.Open()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		data, err := ioutil.ReadAll(archivedFileReader)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		link := string(data)
+		fullPath := filepath.Join(destPath, symLinkFile.Name)
+		err = os.Symlink(link, fullPath)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
 		archivedFileReader.Close()
 	}
 

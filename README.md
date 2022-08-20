@@ -63,5 +63,10 @@ volumes:
 | cacheable_relative_paths | string    | cached paths, path relative to repo root          |
 | cacheable_absolute_paths | string    | cached paths, absolute paths, volume not needed   |
 
-# License
+## Publish new image
+```
+./scripts/publish.sh
+```
+
+## License
 MIT
