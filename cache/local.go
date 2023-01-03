@@ -2,7 +2,7 @@ package cache
 
 import (
 	"crypto/sha256"
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -186,7 +186,7 @@ func (v VolumeStorage) cachePersistDir() (string, error) {
 			return "", err
 		}
 
-		hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
+		hash := hex.EncodeToString(hasher.Sum(nil))
 		cachePersistDir = filepath.Join(cachePersistDir, hash)
 	}
 
