@@ -20,12 +20,7 @@ func main() {
 		log.Println(err)
 	}
 
-	ca, err := cache.New(cfg)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = ca.Execute()
+	err = cache.Execute(cfg)
 	if err != nil {
 		log.Println(err)
 	}
