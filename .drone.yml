@@ -20,7 +20,7 @@ steps:
   - name: run unit tests
     image: golang:1.18
     volumes:
-      - name: cache
+      - name: go-mod-cache
         path: /go/pkg/mod
     commands:
       - go test ./...
@@ -39,8 +39,11 @@ steps:
       storage_type: volume
       volume_cache_root_dir: /var/lib/cache
 volumes:
+  - name: go-mod-cache
+    temp: { }
   - name: cache
-    temp: {}
+    host:
+      path: /var/lib/cache
 trigger:
   branch:
     - master
