@@ -1,4 +1,5 @@
 # Drone Cache
+
 The most flexible cache plugin for Drone CI
 
 ## Getting Started
@@ -6,19 +7,19 @@ The most flexible cache plugin for Drone CI
 ### Node.js project
 
 ```yaml
-- name: restore cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.9
+steps:
+  - name: retrieve cache
+    image: ghcr.io/teamyapp/drone-cache:0.1.9
+    volumes:
+      - name: cache
+        path: /var/lib/cache
     settings:
-      s3_endpoint: sfo3.digitaloceanspaces.com
-      s3_access_key_id:
-        from_secret: SPACE_ACCESS_KEY
-      s3_secret:
-        from_secret: SPACE_SECRET
-      s3_bucket: teamyapp
-      remote_root_dir: cache/node/teamy-web
-      restore: true
+      mode: retrieve
+      version_file_path: yarn.lock
       cacheable_relative_paths:
         - node_modules
+      storage_type: volume
+      volume_cache_root_dir: /var/lib/cache
   - name: build frontend
     image: node:16.13.0-alpine3.13
     commands:
@@ -30,82 +31,87 @@ The most flexible cache plugin for Drone CI
     commands:
       - apk add --no-cache git
       - CI=true yarn test
-  - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.9
+  - name: persist cache
+    image: ghcr.io/teamyapp/drone-cache:0.1.9
+    volumes:
+      - name: cache
+        path: /var/lib/cache
     settings:
-      s3_endpoint: sfo3.digitaloceanspaces.com
-      s3_access_key_id:
-        from_secret: SPACE_ACCESS_KEY
-      s3_secret:
-        from_secret: SPACE_SECRET
-      s3_bucket: teamyapp
-      remote_root_dir: cache/node/teamy-web
-      refresh: true
+      mode: persist
+      version_file_path: yarn.lock
       cacheable_relative_paths:
         - node_modules
+      storage_type: volume
+      volume_cache_root_dir: /var/lib/cache
+volumes:
+  - name: cache
+    host:
+      path: /var/lib/cache
 ```
 
 ### Go project
+
 ```yaml
 steps:
-  - name: restore cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.9
+  - name: retrieve cache
+    image: ghcr.io/teamyapp/drone-cache:0.1.9
     volumes:
-      - name: cache
+      - name: go-mod-cache
         path: /go/pkg/mod
+      - name: cache
+        path: /var/lib/cache
     settings:
-      s3_endpoint: sfo3.digitaloceanspaces.com
-      s3_access_key_id:
-        from_secret: SPACE_ACCESS_KEY
-      s3_secret:
-        from_secret: SPACE_SECRET
-      s3_bucket: teamyapp
-      remote_root_dir: cache/go
-      restore: true
+      mode: retrieve
+      version_file_path: go.sum
       cacheable_absolute_paths:
         - /go/pkg/mod
+      storage_type: volume
+      volume_cache_root_dir: /var/lib/cache
   - name: run unit tests
     image: golang:1.18
     volumes:
-      - name: cache
+      - name: go-mod-cache
         path: /go/pkg/mod
     commands:
       - go test ./...
-  - name: refresh cache
-    image: ghcr.io/teamyapp/drone-cache:0.0.9
+  - name: persist cache
+    image: ghcr.io/teamyapp/drone-cache:0.1.9
     volumes:
-      - name: cache
+      - name: go-mod-cache
         path: /go/pkg/mod
+      - name: cache
+        path: /var/lib/cache
     settings:
-      s3_endpoint: sfo3.digitaloceanspaces.com
-      s3_access_key_id:
-        from_secret: SPACE_ACCESS_KEY
-      s3_secret:
-        from_secret: SPACE_SECRET
-      s3_bucket: teamyapp
-      remote_root_dir: cache/go
-      refresh: true
+      mode: persist
+      version_file_path: go.sum
       cacheable_absolute_paths:
         - /go/pkg/mod
+      storage_type: volume
+      volume_cache_root_dir: /var/lib/cache
 volumes:
+  - name: go-mod-cache
+    temp: { }
   - name: cache
-    temp: {}
+    host:
+      path: /var/lib/cache
 ```
 
 ## Available settings
 
-| Setting                  | Data Type | Description                                       |
-|--------------------------|-----------|---------------------------------------------------|
-| debug                    | bool      | print the value for all settings                  |
-| s3_endpoint              | string    | endpoint for s3 compatible storage                |
-| s3_access_key_id         | string    | access key id for s3 compatible storage           |
-| s3_secret                | string    | secret of access key for s3 compatible storage    |
-| s3_bucket                | string    | bucket name for s3 compatible storage             |
-| remote_root_dir          | string    | cache file root directory in the s3 bucket        |
-| restore                  | bool      | restore cached directories during this build step |
-| refresh                  | bool      | refresh cached during this build step             |
-| cacheable_relative_paths | string    | cached paths, path relative to repo root          |
-| cacheable_absolute_paths | string    | cached paths, absolute paths, volume not needed   |
+| Setting                  | Data Type | Description                                    |
+|--------------------------|-----------|------------------------------------------------|
+| debug                    | bool      | print the value for all settings               |
+| mode                     | string    | retrieve/persist                               | 
+| version_file_path        | string    | use sha256 hash of this file as cache key      | 
+| cacheable_relative_paths | string    | cached paths, path relative to repo root       |
+| cacheable_absolute_paths | string    | cached paths, absolute paths                   |
+| storage_type             | string    | volume/s3                                      |
+| s3_endpoint              | string    | endpoint for s3 compatible storage             |
+| s3_access_key_id         | string    | access key id for s3 compatible storage        |
+| s3_secret                | string    | secret of access key for s3 compatible storage |
+| s3_bucket                | string    | bucket name for s3 compatible storage          |
+| s3_cache_root_dir        | string    | cache root directory in the s3 bucket          |
+| volume_cache_root_dir    | string    | cache root directory for the attached volume   |
 
 ## Publish new image
 ```
@@ -113,4 +119,5 @@ volumes:
 ```
 
 ## License
+
 MIT
