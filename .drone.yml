@@ -1,5 +1,5 @@
 kind: pipeline
-type: kubernetes
+type: docker
 name: feature
 
 steps:
@@ -43,7 +43,7 @@ volumes:
     temp: { }
   - name: cache
     host:
-      path: /var/lib/cache
+      path: /var/drone/cache
 trigger:
   branch:
     - master
